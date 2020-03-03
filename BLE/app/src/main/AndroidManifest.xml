@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.s1080994.tid.findble">
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.example.ble"
+    tools:ignore="ExtraText">
 
+    public static final String ACCESS_FINE_LOCATION <!-- Dit is nodig om connectie te maken met BLE, omdat BLE vaak met locatie
+                                                        gelinkt is-->
 
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.BLUETOOTH"/> <!-- Permission vragen om bluetooth te gebruiken -->
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN"/>
+
+    <!-- If your app targets Android 9 or lower, you can declare
+         ACCESS_COARSE_LOCATION instead. -->s
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-
-    <uses-feature
-        android:name="android.hardware.bluetooth_le"
-        android:required="true" />
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false"/> <!-- Required moet op false voor BLE -->
 
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <activity android:name=".MainActivity">
