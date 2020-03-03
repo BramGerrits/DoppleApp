@@ -1,190 +1,153 @@
 package com.example.ble;
 
+import android.Manifest;
+import android.app.AlertDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothManager;
+import android.bluetooth.le.BluetoothLeScanner;
+import android.bluetooth.le.ScanCallback;
+import android.bluetooth.le.ScanResult;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
+import android.os.AsyncTask;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
+import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.Button;
-import android.widget.ListView;
-import android.widget.ScrollView;
+import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+public class MainActivity extends AppCompatActivity {
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, AdapterView.OnItemClickListener {
-    private final static String TAG = MainActivity.class.getSimpleName();
-
-    public static final int REQUEST_ENABLE_BT = 1;
-    public static final int BTLE_SERVICES = 2;
-
-    private HashMap<String, BTLE_Device> mBTDevicesHashMap;
-    private ArrayList<BTLE_Device> mBTDevicesArrayList;
-    private ListAdapter_BTLE_Devices adapter;
-    private ListView listView;
-
-    private Button btn_Scan;
-
-    private BroadcastReceiver_BTState mBTStateUpdateReceiver;
-    private Scanner_BTLE mBTLeScanner;
+    BluetoothManager btManager;
+    BluetoothAdapter btAdapter;
+    BluetoothLeScanner btScanner;
+    Button startScanningButton;
+    Button stopScanningButton;
+    TextView peripheralTextView;
+    private final static int REQUEST_ENABLE_BT = 1;
+    private static final int PERMISSION_REQUEST_COARSE_LOCATION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Use this check to determine whether BLE is supported on the device. Then
-        // you can selectively disable BLE-related features.
-        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
-            Utils.toast(getApplicationContext(), "BLE not supported");
-            finish();
-        }
+        peripheralTextView = (TextView) findViewById(R.id.PeripheralTextView);
+        peripheralTextView.setMovementMethod(new ScrollingMovementMethod());
 
-        mBTStateUpdateReceiver = new BroadcastReceiver_BTState(getApplicationContext());
-        mBTLeScanner = new Scanner_BTLE(this, 5000, -75);
-
-        mBTDevicesHashMap = new HashMap<>();
-        mBTDevicesArrayList = new ArrayList<>();
-
-        adapter = new ListAdapter_BTLE_Devices(this, R.layout.btle_device_list_item, mBTDevicesArrayList);
-
-        listView = new ListView(this);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener(this);
-
-        btn_Scan = (Button) findViewById(R.id.btn_scan);
-        ((ScrollView) findViewById(R.id.scrollView)).addView(listView);
-        findViewById(R.id.btn_scan).setOnClickListener(this);
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        registerReceiver(mBTStateUpdateReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-//        registerReceiver(mBTStateUpdateReceiver, new IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED));
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-//        unregisterReceiver(mBTStateUpdateReceiver);
-        stopScan();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-
-        unregisterReceiver(mBTStateUpdateReceiver);
-        stopScan();
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-        // Check which request we're responding to
-        if (requestCode == REQUEST_ENABLE_BT) {
-            // Make sure the request was successful
-            if (resultCode == RESULT_OK) {
-//                Utils.toast(getApplicationContext(), "Thank you for turning on Bluetooth");
+        startScanningButton = (Button) findViewById(R.id.StartScanButton);
+        startScanningButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                startScanning();
             }
-            else if (resultCode == RESULT_CANCELED) {
-                Utils.toast(getApplicationContext(), "Please turn on Bluetooth");
+        });
+
+        stopScanningButton = (Button) findViewById(R.id.StopScanButton);
+        stopScanningButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                stopScanning();
+            }
+        });
+        stopScanningButton.setVisibility(View.INVISIBLE);
+
+        btManager = (BluetoothManager)getSystemService(Context.BLUETOOTH_SERVICE);
+        btAdapter = btManager.getAdapter();
+        btScanner = btAdapter.getBluetoothLeScanner();
+
+
+        if (btAdapter != null && !btAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent,REQUEST_ENABLE_BT);
+        }
+
+        // Make sure we have access coarse location enabled, if not, prompt the user to enable it
+        if (this.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("This app needs location access");
+            builder.setMessage("Please grant location access so this app can detect peripherals.");
+            builder.setPositiveButton(android.R.string.ok, null);
+            builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+                @Override
+                public void onDismiss(DialogInterface dialog) {
+                    requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PERMISSION_REQUEST_COARSE_LOCATION);
+                }
+            });
+            builder.show();
+        }
+    }
+
+    // Device scan callback.
+    private ScanCallback leScanCallback = new ScanCallback() {
+        @Override
+        public void onScanResult(int callbackType, ScanResult result) {
+            peripheralTextView.append("Device Name: " + result.getDevice().getName() + " rssi: " + result.getRssi() + "\n");
+
+            // auto scroll for text view
+            final int scrollAmount = peripheralTextView.getLayout().getLineTop(peripheralTextView.getLineCount()) - peripheralTextView.getHeight();
+            // if there is no need to scroll, scrollAmount will be <=0
+            if (scrollAmount > 0)
+                peripheralTextView.scrollTo(0, scrollAmount);
+        }
+    };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case PERMISSION_REQUEST_COARSE_LOCATION: {
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    System.out.println("coarse location permission granted");
+                } else {
+                    final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+                    builder.setTitle("Functionality limited");
+                    builder.setMessage("Since location access has not been granted, this app will not be able to discover beacons when in the background.");
+                    builder.setPositiveButton(android.R.string.ok, null);
+                    builder.setOnDismissListener(new DialogInterface.OnDismissListener() {
+
+                        @Override
+                        public void onDismiss(DialogInterface dialog) {
+                        }
+
+                    });
+                    builder.show();
+                }
+                return;
             }
         }
-        else if (requestCode == BTLE_SERVICES) {
-            // Do something
-        }
     }
 
-    @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        Context context = view.getContext();
-
-//        Utils.toast(context, "List Item clicked");
-
-        // do something with the text views and start the next activity.
-
-        stopScan();
-
-        String name = mBTDevicesArrayList.get(position).getName();
-        String address = mBTDevicesArrayList.get(position).getAddress();
-
-        Intent intent = new Intent(this, Activity_BTLE_Services.class);
-        intent.putExtra(Activity_BTLE_Services.EXTRA_NAME, name);
-        intent.putExtra(Activity_BTLE_Services.EXTRA_ADDRESS, address);
-        startActivityForResult(intent, BTLE_SERVICES);
+    public void startScanning() {
+        System.out.println("start scanning");
+        peripheralTextView.setText("");
+        startScanningButton.setVisibility(View.INVISIBLE);
+        stopScanningButton.setVisibility(View.VISIBLE);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                btScanner.startScan(leScanCallback);
+            }
+        });
     }
 
-    @Override
-    public void onClick(View v) {
-
-        switch (v.getId()) {
-
-            case R.id.btn_scan:
-                Utils.toast(getApplicationContext(), "Scan Button Pressed");
-
-                if (!mBTLeScanner.isScanning()) {
-                    startScan();
-                }
-                else {
-                    stopScan();
-                }
-
-                break;
-            default:
-                break;
-        }
-
-    }
-
-    public void addDevice(BluetoothDevice device, int rssi) {
-
-        String address = device.getAddress();
-        if (!mBTDevicesHashMap.containsKey(address)) {
-            BTLE_Device btleDevice = new BTLE_Device(device);
-            btleDevice.setRSSI(rssi);
-
-            mBTDevicesHashMap.put(address, btleDevice);
-            mBTDevicesArrayList.add(btleDevice);
-        }
-        else {
-            mBTDevicesHashMap.get(address).setRSSI(rssi);
-        }
-
-        adapter.notifyDataSetChanged();
-    }
-
-    public void startScan(){
-        btn_Scan.setText("Scanning...");
-
-        mBTDevicesArrayList.clear();
-        mBTDevicesHashMap.clear();
-
-        mBTLeScanner.start();
-    }
-
-    public void stopScan() {
-        btn_Scan.setText("Scan Again");
-
-        mBTLeScanner.stop();
+    public void stopScanning() {
+        System.out.println("stopping scanning");
+        peripheralTextView.append("Stopped Scanning");
+        startScanningButton.setVisibility(View.VISIBLE);
+        stopScanningButton.setVisibility(View.INVISIBLE);
+        AsyncTask.execute(new Runnable() {
+            @Override
+            public void run() {
+                btScanner.stopScan(leScanCallback);
+            }
+        });
     }
 }
