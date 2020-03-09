@@ -23,15 +23,6 @@ public class OpenGLDemoActivity extends Activity {
         GLSurfaceView view = new GLSurfaceView(this);
         render = new OpenGLRenderer();
         view.setRenderer(render);
-
-        view.setOnScrollChangeListener(new View.OnScrollChangeListener(){
-
-            @Override
-            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-                float rotation = scrollX - oldScrollX;
-                render.setmCubeRotation(rotation);
-            }
-        });
         setContentView(view);
     }
 }

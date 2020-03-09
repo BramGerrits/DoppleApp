@@ -33,13 +33,14 @@ class OpenGLRenderer implements GLSurfaceView.Renderer {
         gl.glLoadIdentity();
 
         gl.glTranslatef(0.0f, 0.0f, -10.0f);
-        gl.glRotatef(mCubeRotation, 1.0f, mCubeRotation, 1.0f);
+        gl.glRotatef(mCubeRotation, 1f, mCubeRotation, 1f);
 
         mCube.draw(gl);
 
         gl.glLoadIdentity();
 
-        //mCubeRotation -= 1.0f;
+
+        mCubeRotation -= 1.0f;
     }
 
     @Override
