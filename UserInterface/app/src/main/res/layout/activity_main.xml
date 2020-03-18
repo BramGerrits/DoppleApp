@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity">
+
+<!--    <TextView-->
+<!--        android:text="Verbinden met bluetooth"-->
+<!--        app:layout_constraintBottom_toBottomOf="parent"-->
+<!--        app:layout_constraintLeft_toLeftOf="parent"-->
+<!--        app:layout_constraintRight_toRightOf="parent"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+
+<!--        />-->
+
+        <RelativeLayout
+            android:orientation="horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="30dp"
+            android:layout_marginTop="100pt"
+            android:background="#ffffbb">
+
+
+            <TextView
+                android:id="@+id/bluetoothTitle"
+                android:text="Verbinden met Bluetooth"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+
+                android:background="@color/red"
+                android:textStyle="bold"
+                android:textSize="36dp"
+                android:textColor="@android:color/background_dark" />
+
+            <Switch
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/bluetoothTitle"
+                android:text="Zet mijn bluetooth aan"
+                android:switchMinWidth="50dp"
+                android:textSize="16dp"
+            />
+
+
+            <ListView
+                android:id="@+id/simpleListView"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:divider="#f00"
+                android:dividerHeight="1dp"
+                />
+<!--            <LinearLayout-->
+
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:orientation="horizontal" >-->
+<!--                &lt;!&ndash; linker element &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:orientation="vertical" >-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="match_parent"-->
+<!--                        android:text="uwu"-->
+<!--                        android:background="#ff0000"/>-->
+
+<!--                </LinearLayout>-->
+<!--                &lt;!&ndash; rechter element &ndash;&gt;-->
+<!--                <LinearLayout-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:orientation="vertical" >-->
+
+<!--                    <TextView-->
+<!--                        android:layout_width="match_parent"-->
+<!--                        android:layout_height="match_parent"-->
+<!--                        android:text="uwu"-->
+<!--                        android:background="#ff0000"/>-->
+
+<!--                </LinearLayout>-->
+<!--            </LinearLayout>-->
+
+
+        </RelativeLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>
